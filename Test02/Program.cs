@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Test02.Data;
+using Test02.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,8 +9,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddControllers();
+
 builder.Services.AddDbContext<DatabaseContext>(
     options => options.UseSqlServer("Name=ConnectionStrings:Default"));
+
+builder.Services.AddScoped<IDbService, DbService>();
 
 var app = builder.Build();
 
@@ -21,5 +26,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.MapControllers();
 
 app.Run();
