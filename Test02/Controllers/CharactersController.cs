@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Transactions;
+using Microsoft.AspNetCore.Mvc;
 using Test02.DTOs;
+using Test02.Models;
 using Test02.Services;
 
 namespace Test02.Controllers;
@@ -38,5 +40,44 @@ public class CharactersController : ControllerBase
                 AcquiredAt = ct.AcquiredAt
             }).ToList()
         }));
+    }
+    
+    [HttpPost("{characterId}/backpacks")]
+    public async Task<IActionResult> AddItems(int characterId, List<int> itemsId)
+    {
+        if (!await _dbService.DoesCharacterExist(characterId))
+        {
+            return NotFound($"Character with given id = {characterId} doesn't exist");
+        }
+
+        if (!await _dbService.DoAllItemsExist(itemsId))
+        {
+            return NotFound($"Not all items exist");
+        }
+        
+        if(_dbService.SumItemsWeight(itemsId) > _dbService.GetCharacterFreeSpace(characterId))
+        {
+            return NotFound($"Items weight too much");
+        }
+
+        List<Backpack> backpacks = new List<Backpack>();
+
+        foreach (var itemId in itemsId)
+        {
+            backpacks.Add(new Backpack()
+            {
+                CharacterId = characterId,
+                ItemId = itemId,
+                Amount = 1
+            });
+        }
+        
+        using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+        {
+            await _dbService.AddBackpacks(backpacks);
+            scope.Complete();
+        }
+        
+        return Created();
     }
 }

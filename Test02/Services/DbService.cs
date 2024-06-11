@@ -24,4 +24,47 @@ public class DbService : IDbService
             .Where(c => c.Id == idx)
             .ToListAsync();
     }
+
+    public async Task<bool> DoesCharacterExist(int characterId)
+    {
+        return await _context.Characters.AnyAsync(c => c.Id == characterId);
+    }
+
+    public async Task<bool> DoesItemExist(int itemId)
+    {
+        return await _context.Items.AnyAsync(i => i.Id == itemId);
+    }
+
+    public async Task<bool> DoAllItemsExist(List<int> itemsId)
+    {
+        foreach (var itemId in itemsId)
+        {
+            if (!await DoesItemExist(itemId))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public int GetCharacterFreeSpace(int characterId)
+    {
+        var character = _context.Characters.FirstOrDefaultAsync(c => c.Id == characterId).Result;
+
+        return character.MaxWeight - character.CurrentWeight;
+    }
+
+    public int SumItemsWeight(List<int> itemsId)
+    {
+        return _context.Items
+            .Where(item => itemsId.Contains(item.Id))
+            .Sum(item => item.Weight);
+    }
+
+    public async Task AddBackpacks(IEnumerable<Backpack> backpacks)
+    {
+        await _context.AddRangeAsync(backpacks);
+        await _context.SaveChangesAsync();
+    }
 }
